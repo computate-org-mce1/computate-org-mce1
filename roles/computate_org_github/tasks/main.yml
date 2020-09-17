@@ -369,6 +369,14 @@
 
       Click the "Settings" tab on the forked repository and change the repository name to a unique name, then click [ Rename ]. 
 
+      # Add admin users to the repository
+
+      Click the "Settings" tab on the forked repository, select "Manage access", then click [ Invite teams or people ] and add the instructors as admins on the repository. 
+
+      # Enable issues in the repository
+
+      Click the "Settings" tab on the forked repository and check "Issues" so issues can be added to the repository. 
+
       ### Clone the computate-org repository
 
       On the "Code" tab of the forked repository, click the [ Code ] button, select the SSH URL and copy it to the clipboard. Then clone the repository to your computer in a new directory, where "???" is the unique organization or unique repository name. 
@@ -379,14 +387,39 @@
       cd /usr/local/src/???
       ```
 
-      ### Creaete an Ansible vault for the instructor secrets
+      Setup the upstream repository to pull updates from the upstream repository. 
+
+      ```bash
+      git remote add upstream git@github.com:computate-org/computate-org.git
+      git fetch upstream
+      git merge upstream/master
+      ```
+
+      ### Create an Ansible hosts file for the instructor
+      
+      First create the directory for the instructor inventory. 
+
+      ```bash
+      install -d {{ GITHUB_REPO_PATH }}/inventories/instructor
+      ```
+      
+      Create a hosts file for your development inventory. Add your hostname to each of the following host groups so that ansible can run each of these playbooks on your host. 
+      
+      ```bash
+      echo "
+      [computate_org]
+      localhost
+      " > {{ GITHUB_REPO_PATH }}/inventories/instructor/hosts
+      ```
+
+      ### Create an Ansible vault for the instructor secrets
       
       As an instructor, create and edit an encrypted ansible vault with the information about the team taking the course, organization, and repositories.
       
       ```bash
-      install -d {{ ANSIBLE_REPO_PATH }}/inventories/instructor/host_vars/localhost/
-      ansible-vault create {{ ANSIBLE_REPO_PATH }}/inventories/instructor/host_vars/localhost/vault
-      ansible-vault edit {{ ANSIBLE_REPO_PATH }}/inventories/instructor/host_vars/localhost/vault
+      install -d {{ GITHUB_REPO_PATH }}/inventories/instructor/host_vars/localhost/
+      ansible-vault create {{ GITHUB_REPO_PATH }}/inventories/instructor/host_vars/localhost/vault
+      ansible-vault edit {{ GITHUB_REPO_PATH }}/inventories/instructor/host_vars/localhost/vault
       ```
       
       The contents of the vault will contain the secrets needed to override any default values you want to change in defining the course.
@@ -398,6 +431,14 @@
       ```yaml
       {{ lookup('url', 'https://raw.githubusercontent.com/computate-org/computate-org/master/roles/computate_org_github/defaults/main.yml', split_lines=false) }}
       ```
+
+      Once your Ansible hosts and vault are configured, you can run the ansible-playbook to generate the Github project board, columns, milestones, issues and cards. 
+
+      ```bash
+      (cd /usr/local/src/??? && ansible-playbook instructor.yml -i inventories/instructor/hosts --vault-id @prompt)
+      ```
+
+      Now view the results in github in your organization! 
   tags: 
     - issue_label
     - issue_label_101
